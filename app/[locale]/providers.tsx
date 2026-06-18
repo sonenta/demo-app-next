@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { SonentaProvider, useTranslation } from "@sonenta/next/client";
+import { SonentaProvider } from "@sonenta/next/client";
 import { missingStore } from "@/lib/missing-store";
 import {
   PROJECT_UUID,
@@ -11,26 +11,15 @@ import {
 } from "@/lib/sonenta";
 
 /**
- * Does the normal client CDN fetch once on mount. `initialBundles` already gave
- * the instant offline-first first paint, but a snapshot-only client never opens
- * the missing-key handler's gate (the engine only reports once `_attempted` is
- * set, which a real fetch — start()/reload() — does; per @sonenta/i18n-core).
- * `reload()` arms the handler AND refreshes the bundles in the background.
- */
-function ArmClientFetch() {
-  const { i18n } = useTranslation();
-  useEffect(() => {
-    void i18n.reload();
-  }, [i18n]);
-  return null;
-}
-
-/**
- * Client boundary. Hydrates the shared `@sonenta/react-i18next` engine from the
- * server's `initialBundles` snapshot — offline-first, no second round-trip
- * (#757). The missing-key handler is wired to `send` with a transport that
- * feeds the live telemetry store instead of POSTing, so the showcase visualises
- * every fallback in place.
+ * Client boundary (`"use client"` above). `initialBundles` gives the instant
+ * offline-first first paint; because this is a Client Component, the provider's
+ * own `start()` runs on mount and does the background CDN fetch, which arms the
+ * missing-key handler (`_attempted`) so reported fallbacks stream into the live
+ * telemetry store via the `send` transport below.
+ *
+ * (When @sonenta/next ships its `/client` `use client` banner — 1.0.1 — this
+ * wrapper becomes optional; SonentaProvider can be imported straight into the
+ * App Router.)
  */
 export function Providers({
   locale,
@@ -54,9 +43,8 @@ export function Providers({
       fallbackLng="en"
       namespaces={NAMESPACES}
       initialBundles={initialBundles}
-      // Explicit CDN target so the client background fetch (reload() below) has
-      // somewhere to go — without it the offline-first client never fetches and
-      // the missing-key gate stays closed.
+      // Explicit CDN target for the client's own start() fetch (the lever that
+      // arms the missing-key handler); env=prod → cdnBase/p/<project>/main/latest.
       cdnBase="https://cdn.sonenta.com"
       version="main"
       env="prod"
@@ -64,7 +52,6 @@ export function Providers({
       flushIntervalMs={4000}
       transport={(batch) => missingStore.pushBatch(batch)}
     >
-      <ArmClientFetch />
       {children}
     </SonentaProvider>
   );
