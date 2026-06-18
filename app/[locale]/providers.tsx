@@ -54,6 +54,12 @@ export function Providers({
       fallbackLng="en"
       namespaces={NAMESPACES}
       initialBundles={initialBundles}
+      // Explicit CDN target so the client background fetch (reload() below) has
+      // somewhere to go — without it the offline-first client never fetches and
+      // the missing-key gate stays closed.
+      cdnBase="https://cdn.sonenta.com"
+      version="main"
+      env="prod"
       missingHandler="send"
       flushIntervalMs={4000}
       transport={(batch) => missingStore.pushBatch(batch)}
