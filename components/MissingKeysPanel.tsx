@@ -27,12 +27,11 @@ export function MissingKeysPanel() {
     return () => window.clearTimeout(tm);
   }, [state.lastBatchAt]);
 
+  // CLDR plural: the SDK flattens the `live.count` plural dict and selects the
+  // category from the flat `count` option (NOT `{ values: { count } }`, and not
+  // an explicit `.one`/`.other` path — that would miss).
   const countLabel =
-    count === 0
-      ? t("live.empty")
-      : t(count === 1 ? "live.count.one" : "live.count.other", {
-          values: { count },
-        });
+    count === 0 ? t("live.empty") : t("live.count", { count });
 
   return (
     <div className="rounded-2xl border border-ink-800 bg-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.02),0_24px_60px_-30px_rgba(0,0,0,0.6)] overflow-hidden">
